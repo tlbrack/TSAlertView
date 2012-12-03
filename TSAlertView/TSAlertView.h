@@ -44,14 +44,16 @@ typedef enum
 
 @interface TSAlertView : UIView
 {
-	UIImage*				_backgroundImage;
-	UILabel*				_titleLabel;
-	UILabel*				_messageLabel;
-	UITextView*				_messageTextView;
-	UIImageView*			_messageTextViewMaskImageView;
-	UITextField*			_inputTextField;
-	NSMutableArray*			_buttons;
+    UIActivityIndicatorView* _activityIndicator;
+	UIImage*				 _backgroundImage;
+	UILabel*				 _titleLabel;
+	UILabel*				 _messageLabel;
+	UITextView*				 _messageTextView;
+	UIImageView*			 _messageTextViewMaskImageView;
+	UITextField*			 _inputTextField;
+	NSMutableArray*			 _buttons;
 }
+
 @property(nonatomic, copy) NSString *title;
 @property(nonatomic, copy) NSString *message;
 @property(nonatomic, assign) id<TSAlertViewDelegate> delegate;
@@ -63,15 +65,17 @@ typedef enum
 @property(nonatomic, assign) TSAlertViewButtonLayout buttonLayout;
 @property(nonatomic, assign) CGFloat width;
 @property(nonatomic, assign) CGFloat maxHeight;
+@property(nonatomic, assign) BOOL indicateActivity;
 @property(nonatomic, assign) BOOL usesMessageTextView;
 @property(nonatomic, retain) UIImage* backgroundImage;
 @property(nonatomic, assign) TSAlertViewStyle style;
 @property(nonatomic, readonly) UITextField* inputTextField;
 
-- (id)initWithTitle:(NSString *)title message:(NSString *)message delegate:(id)delegate cancelButtonTitle:(NSString *)cancelButtonTitle otherButtonTitles:(NSString *)otherButtonTitles, ...;
+- (id)initWithTitle:(NSString *)title message:(NSString *)message delegate:(id)delegate indicateActivity:(BOOL)activity cancelButtonTitle:(NSString *)cancelButtonTitle otherButtonTitles:(NSString *)otherButtonTitles, ...;
 - (NSInteger)addButtonWithTitle:(NSString *)title;
 - (NSString *)buttonTitleAtIndex:(NSInteger)buttonIndex;
 - (void)dismissWithClickedButtonIndex:(NSInteger)buttonIndex animated:(BOOL)animated;
+- (void)hide;
 - (void)show;
 
 @end

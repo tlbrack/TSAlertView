@@ -65,10 +65,12 @@
 @end
 
 @interface TSAlertView (private)
+@property (nonatomic, readonly) UIActivityIndicatorView* _activityIndicator;
 @property (nonatomic, readonly) NSMutableArray* buttons;
 @property (nonatomic, readonly) UILabel* titleLabel;
 @property (nonatomic, readonly) UILabel* messageLabel;
 @property (nonatomic, readonly) UITextView* messageTextView;
+- (void) addActivityIndicator;
 - (void) TSAlertView_commonInit;
 - (void) releaseWindow: (int) buttonIndex;
 - (void) pulse;
@@ -88,7 +90,7 @@
 @implementation TSAlertViewController
 - (BOOL) shouldAutorotateToInterfaceOrientation:(UIInterfaceOrientation)toInterfaceOrientation
 {
-	return YES;
+	return NO;
 }
 - (void)willAnimateRotationToInterfaceOrientation:(UIInterfaceOrientation)interfaceOrientation duration:(NSTimeInterval)duration
 {
@@ -122,10 +124,11 @@
 @synthesize width;
 @synthesize maxHeight;
 @synthesize usesMessageTextView;
+@synthesize indicateActivity;
 @synthesize backgroundImage = _backgroundImage;
 @synthesize style;
 
-const CGFloat kTSAlertView_LeftMargin	= 10.0;
+const CGFloat kTSAlertView_LeftMargin	= 60.0;
 const CGFloat kTSAlertView_TopMargin	= 16.0;
 const CGFloat kTSAlertView_BottomMargin = 15.0;
 const CGFloat kTSAlertView_RowMargin	= 5.0;
@@ -155,14 +158,20 @@ const CGFloat kTSAlertView_ColumnMargin = 10.0;
 	return self;
 }
 
-- (id) initWithTitle: (NSString *) t message: (NSString *) m delegate: (id) d cancelButtonTitle: (NSString *) cancelButtonTitle otherButtonTitles: (NSString *) otherButtonTitles, ...
+- (id) initWithTitle: (NSString *) t message: (NSString *) m delegate: (id) d  indicateActivity: (BOOL) activity cancelButtonTitle: (NSString *) cancelButtonTitle otherButtonTitles: (NSString *) otherButtonTitles, ...
 {
 	if ( (self = [super init] ) ) // will call into initWithFrame, thus TSAlertView_commonInit is called
 	{
 		self.title = t;
 		self.message = m;
 		self.delegate = d;
-		
+		self.indicateActivity = activity;
+        
+        if ( self.indicateActivity )
+        {
+            [self addActivityIndicator];
+        }
+        
 		if ( nil != cancelButtonTitle )
 		{
 			[self addButtonWithTitle: cancelButtonTitle ];
@@ -209,6 +218,7 @@ const CGFloat kTSAlertView_ColumnMargin = 10.0;
 
 - (void)dealloc 
 {
+    [_activityIndicator release];
 	[_backgroundImage release];
 	[_buttons release];
 	[_titleLabel release];
@@ -323,6 +333,16 @@ const CGFloat kTSAlertView_ColumnMargin = 10.0;
 					 }];
 }
 
+- (UIActivityIndicatorView*) activityIndicator
+{
+    if (_activityIndicator == nil)
+    {
+        _activityIndicator = [[UIActivityIndicatorView alloc] initWithActivityIndicatorStyle:UIActivityIndicatorViewStyleWhiteLarge];
+    }
+    
+    return _activityIndicator;
+}
+
 - (NSMutableArray*) buttons
 {
 	if ( _buttons == nil )
@@ -341,8 +361,8 @@ const CGFloat kTSAlertView_ColumnMargin = 10.0;
 		_titleLabel.font = [UIFont boldSystemFontOfSize: 18];
 		_titleLabel.backgroundColor = [UIColor clearColor];
 		_titleLabel.textColor = [UIColor whiteColor];
-		_titleLabel.textAlignment = UITextAlignmentCenter;
-		_titleLabel.lineBreakMode = UILineBreakModeWordWrap;
+		_titleLabel.textAlignment = NSTextAlignmentCenter;
+		_titleLabel.lineBreakMode = NSLineBreakByWordWrapping;
 		_titleLabel.numberOfLines = 0;
 	}
 	
@@ -357,8 +377,8 @@ const CGFloat kTSAlertView_ColumnMargin = 10.0;
 		_messageLabel.font = [UIFont systemFontOfSize: 16];
 		_messageLabel.backgroundColor = [UIColor clearColor];
 		_messageLabel.textColor = [UIColor whiteColor];
-		_messageLabel.textAlignment = UITextAlignmentCenter;
-		_messageLabel.lineBreakMode = UILineBreakModeWordWrap;
+		_messageLabel.textAlignment = NSTextAlignmentCenter;
+		_messageLabel.lineBreakMode = NSLineBreakByWordWrapping;
 		_messageLabel.numberOfLines = 0;
 	}
 	
@@ -374,7 +394,7 @@ const CGFloat kTSAlertView_ColumnMargin = 10.0;
 		_messageTextView.font = [UIFont systemFontOfSize: 16];
 		_messageTextView.backgroundColor = [UIColor whiteColor];
 		_messageTextView.textColor = [UIColor darkTextColor];
-		_messageTextView.textAlignment = UITextAlignmentLeft;
+		_messageTextView.textAlignment = NSTextAlignmentCenter;
 		_messageTextView.bounces = YES;
 		_messageTextView.alwaysBounceVertical = YES;
 		_messageTextView.layer.cornerRadius = 5;
@@ -468,6 +488,12 @@ const CGFloat kTSAlertView_ColumnMargin = 10.0;
 	return self.superview != nil;
 }
 
+- (void) addActivityIndicator
+{
+    [self addSubview:self.activityIndicator];
+    [self setNeedsLayout];
+}
+
 - (NSInteger) addButtonWithTitle: (NSString *) t
 {
 	UIButton* b = [UIButton buttonWithType: UIButtonTypeCustom];
@@ -512,6 +538,11 @@ const CGFloat kTSAlertView_ColumnMargin = 10.0;
 	{
 		[self.delegate alertView: self willDismissWithButtonIndex: buttonIndex ];
 	}
+    
+    if (self.indicateActivity)
+    {
+        [self.activityIndicator stopAnimating];
+    }
 	
 	if ( animated )
 	{
@@ -550,6 +581,11 @@ const CGFloat kTSAlertView_ColumnMargin = 10.0;
 	[self.window release];
 }
 
+- (void) hide
+{
+    [self dismissWithClickedButtonIndex:0 animated:YES];
+}
+
 - (void) show
 {
 	[[NSRunLoop currentRunLoop] runMode: NSDefaultRunLoopMode beforeDate:[NSDate date]];
@@ -582,6 +618,11 @@ const CGFloat kTSAlertView_ColumnMargin = 10.0;
 		[self layoutSubviews];
 		[self.inputTextField becomeFirstResponder];
 	}
+    
+    if (self.indicateActivity)
+    {
+        [self.activityIndicator startAnimating];
+    }
 }
 
 - (void) pulse
@@ -636,12 +677,23 @@ const CGFloat kTSAlertView_ColumnMargin = 10.0;
 	CGSize  titleLabelSize = [self titleLabelSize];
 	CGSize  messageViewSize = [self messageLabelSize];
 	CGSize  inputTextFieldSize = [self inputTextFieldSize];
-	CGSize  buttonsAreaSize = stacked ? [self buttonsAreaSize_Stacked] : [self buttonsAreaSize_SideBySide];
+	CGSize  buttonsAreaSize;
+    if (self.numberOfButtons > 0) 
+        buttonsAreaSize = stacked ? [self buttonsAreaSize_Stacked] : [self buttonsAreaSize_SideBySide];
+    else
+        buttonsAreaSize = CGSizeZero;
 	
 	CGFloat inputRowHeight = self.style == TSAlertViewStyleInput ? inputTextFieldSize.height + kTSAlertView_RowMargin : 0;
+    CGFloat activityHeight = self.indicateActivity ? [self.activityIndicator sizeThatFits:CGSizeZero].height : 0;
+    
+    NSLog(@"ACTIVITY INDICATOR: %f", [self.activityIndicator sizeThatFits:CGSizeZero].height);
+    NSLog(@"INDICATE ACTIVITY: %i", self.indicateActivity);
+    NSLog(@"ACTIVITY HEIGHT: %f", activityHeight);
+
+	CGFloat totalHeight = kTSAlertView_TopMargin + activityHeight + titleLabelSize.height + kTSAlertView_RowMargin + messageViewSize.height + inputRowHeight + kTSAlertView_RowMargin + buttonsAreaSize.height + kTSAlertView_BottomMargin;
 	
-	CGFloat totalHeight = kTSAlertView_TopMargin + titleLabelSize.height + kTSAlertView_RowMargin + messageViewSize.height + inputRowHeight + kTSAlertView_RowMargin + buttonsAreaSize.height + kTSAlertView_BottomMargin;
-	
+    NSLog(@"TOTAL HEIGHT: %f", totalHeight);
+    
 	if ( totalHeight > self.maxHeight )
 	{
 		// too tall - we'll condense by using a textView (with scrolling) for the message
@@ -657,8 +709,18 @@ const CGFloat kTSAlertView_ColumnMargin = 10.0;
 	
 	if ( layout )
 	{
-		// title
 		CGFloat y = kTSAlertView_TopMargin;
+
+        // activity indicator
+        if (self.indicateActivity)
+        {
+            CGSize activitySize = self.activityIndicator.frame.size;    
+            self.activityIndicator.frame = CGRectMake(self.width/2 - activitySize.width/2, y, activitySize.width, activitySize.height);
+            [self addSubview:self.activityIndicator];
+            y += activitySize.height + kTSAlertView_RowMargin;
+        }
+        
+		// title
 		if ( self.title != nil )
 		{
 			self.titleLabel.frame = CGRectMake( kTSAlertView_LeftMargin, y, titleLabelSize.width, titleLabelSize.height );
@@ -696,31 +758,35 @@ const CGFloat kTSAlertView_ColumnMargin = 10.0;
 		}
 		
 		// buttons
-		CGFloat buttonHeight = [[self.buttons objectAtIndex:0] sizeThatFits: CGSizeZero].height;
-		if ( stacked )
-		{
-			CGFloat buttonWidth = maxWidth;
-			for ( UIButton* b in self.buttons )
-			{
-				b.frame = CGRectMake( kTSAlertView_LeftMargin, y, buttonWidth, buttonHeight );
-				[self addSubview: b];
-				y += buttonHeight + kTSAlertView_RowMargin;
-			}
-		}
-		else
-		{
-			CGFloat buttonWidth = (maxWidth - kTSAlertView_ColumnMargin) / 2.0;
-			CGFloat x = kTSAlertView_LeftMargin;
-			for ( UIButton* b in self.buttons )
-			{
-				b.frame = CGRectMake( x, y, buttonWidth, buttonHeight );
-				[self addSubview: b];
-				x += buttonWidth + kTSAlertView_ColumnMargin;
-			}
-		}
+        if (self.numberOfButtons > 0)
+        {
+            CGFloat buttonHeight = [[self.buttons objectAtIndex:0] sizeThatFits: CGSizeZero].height;
+            if ( stacked )
+            {
+                CGFloat buttonWidth = maxWidth;
+                for ( UIButton* b in self.buttons )
+                {
+                    b.frame = CGRectMake( kTSAlertView_LeftMargin, y, buttonWidth, buttonHeight );
+                    [self addSubview: b];
+                    y += buttonHeight + kTSAlertView_RowMargin;
+                }
+            }
+            else
+            {
+                CGFloat buttonWidth = (maxWidth - kTSAlertView_ColumnMargin) / 2.0;
+                CGFloat x = kTSAlertView_LeftMargin;
+                for ( UIButton* b in self.buttons )
+                {
+                    b.frame = CGRectMake( x, y, buttonWidth, buttonHeight );
+                    [self addSubview: b];
+                    x += buttonWidth + kTSAlertView_ColumnMargin;
+                }
+            }
+        }
 		
 	}
 	
+    NSLog(@"WIDTH: %f", self.width);
 	return CGSizeMake( self.width, totalHeight );
 }
 
