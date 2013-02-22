@@ -541,6 +541,7 @@ const CGFloat kTSAlertView_ColumnMargin = 10.0;
     
     if (self.indicateActivity)
     {
+        assert([NSThread isMainThread]);
         [self.activityIndicator stopAnimating];
     }
 	
@@ -570,6 +571,7 @@ const CGFloat kTSAlertView_ColumnMargin = 10.0;
 
 - (void) releaseWindow: (int) buttonIndex
 {
+    assert([NSThread isMainThread]);
 	if ( [self.delegate respondsToSelector: @selector(alertView:didDismissWithButtonIndex:)] )
 	{
 		[self.delegate alertView: self didDismissWithButtonIndex: buttonIndex ];
@@ -583,6 +585,7 @@ const CGFloat kTSAlertView_ColumnMargin = 10.0;
 
 - (void) hide
 {
+    assert([NSThread isMainThread]);
     [self dismissWithClickedButtonIndex:0 animated:YES];
 }
 
