@@ -1,6 +1,7 @@
 TSAlertView
 ===========
 
+
 TSAlertView is a drop-in replacement for UIAlertView in iOS, offering additional functionality:
 
 * "buttonLayout" property.  This is useful when you have two buttons and you want them to be "stacked" instead of side-by-side.
